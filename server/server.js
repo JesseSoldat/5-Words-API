@@ -1,5 +1,6 @@
 require('./config/config');
 
+const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
@@ -55,13 +56,35 @@ app.get('/words', (req, res) => {
 
 
 app.get('/words/array', (req, res) => {
-	let user = req.query.user;
-	console.log(user); //Kelly
-	WordsArray.find({user: user}).then((user) => {
-		// console.log(user.words);
-		words = user[0].words;
-		WordsArray.find({ words: { $in: words } }).then(words => {
-		res.send({words});
+	///words/array/?user=Kelly
+	let reqUser = req.query.user;
+
+	WordsArray.find({user: reqUser}).then((user) => {
+		//get an array of user words
+		let userWords = user[0].words;
+		//return other users that have matching words
+		WordsArray.find({ words: { $in: userWords } }).then(words => {
+			//an array of matching users to send back in the response
+			let resArray = [];
+		
+			words.forEach(object => {
+				//do not send the current user back
+				if(object.user === reqUser) {
+					return;
+				}
+				//create an obj for each user that matches
+				let userObj = {};
+				//include the user identity
+				userObj.user = object.user;
+				
+				//takes two arrays and returns matching words into a new array
+				var matchingWords = _.intersection(userWords, object.words);
+				//add this array to our user object
+				userObj.words = matchingWords;
+				//add each object to our response array
+				resArray.push(userObj);
+			});
+			res.send({resArray});
 	}, (err) => {
 		res.status(400).send(err);
 	});
