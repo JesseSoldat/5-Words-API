@@ -54,42 +54,110 @@ app.get('/words', (req, res) => {
 	});
 });
 
+//NESTING --------------------------------------------
+// app.get('/words/array', (req, res) => {
+// 	///words/array/?user=Kelly
+// 	let reqUser = req.query.user;
 
+// 	WordsArray.find({user: reqUser}).then((user) => {
+// 		//get an array of user words
+// 		let userWords = user[0].words;
+// 		//return other users that have matching words
+// 		WordsArray.find({ words: { $in: userWords } }).then(words => {
+// 			//an array of matching users to send back in the response
+// 			let resArray = [];
+		
+// 			words.forEach(object => {
+// 				//do not send the current user back
+// 				if(object.user === reqUser) {
+// 					return;
+// 				}
+// 				//create an obj for each user that matches
+// 				let userObj = {};
+// 				//include the user identity
+// 				userObj.user = object.user;
+				
+// 				//takes two arrays and returns matching words into a new array
+// 				var matchingWords = _.intersection(userWords, object.words);
+// 				//add this array to our user object
+// 				userObj.words = matchingWords;
+// 				//add each object to our response array
+// 				resArray.push(userObj);
+// 			});
+// 			res.send({resArray});
+// 	}, (err) => {
+// 		res.status(400).send(err);
+// 	});
+// 	})
+	
+// });
+
+//CHAINING---------------------------------------------
 app.get('/words/array', (req, res) => {
 	///words/array/?user=Kelly
+	//words/array/?user=Kelly&num=4;
 	let reqUser = req.query.user;
+	let reqNum = req.query.num;
 
-	WordsArray.find({user: reqUser}).then((user) => {
+	let userWords;
+
+	WordsArray.find({user: reqUser})
+	.then((user) => {
 		//get an array of user words
-		let userWords = user[0].words;
+		userWords = user[0].words;
 		//return other users that have matching words
-		WordsArray.find({ words: { $in: userWords } }).then(words => {
-			//an array of matching users to send back in the response
-			let resArray = [];
-		
-			words.forEach(object => {
-				//do not send the current user back
-				if(object.user === reqUser) {
-					return;
-				}
-				//create an obj for each user that matches
-				let userObj = {};
-				//include the user identity
-				userObj.user = object.user;
-				
-				//takes two arrays and returns matching words into a new array
-				var matchingWords = _.intersection(userWords, object.words);
-				//add this array to our user object
-				userObj.words = matchingWords;
-				//add each object to our response array
-				resArray.push(userObj);
+		return WordsArray.find({ words: { $in: userWords } });
+	})
+	.then(words => {
+		//an array of matching users to send back in the response
+		let resArray = [];
+	
+		words.forEach(object => {
+			//do not send the current user back
+			if(object.user === reqUser) {
+				return;
+			}
+			//create an obj for each user that matches
+			let userObj = {};
+			//include the user identity
+			userObj.user = object.user;
+			
+			//takes two arrays and returns matching words into a new array
+			var matchingWords = _.intersection(userWords, object.words);
+			//add this array to our user object
+			userObj.words = matchingWords;
+			//add each object to our response array
+			resArray.push(userObj);
+		});
+
+		//filter option
+		if(reqNum) {
+			
+			//filter array here 
+			let filteredArray = resArray.filter(function(obj) {
+    		return obj.words.length >= reqNum;
 			});
-			res.send({resArray});
+
+			//sort by the most word matches
+			filteredArray.sort(function(a, b) {
+	    	return b.words.length - a.words.length;
+			});
+			
+			res.send({filteredArray});
+			return;
+		}
+
+		//sort by the most word matches
+		resArray.sort(function(a, b) {
+    	return b.words.length - a.words.length;
+		});
+
+		res.send({resArray});
 	}, (err) => {
 		res.status(400).send(err);
-	});
-	})
-	
+	}).catch(err => {
+		console.log(err);
+	})	
 });
 
 // app.get('/words/array', (req, res) => {
