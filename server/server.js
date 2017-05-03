@@ -54,6 +54,30 @@ app.get('/words', (req, res) => {
 });
 
 
+app.get('/words/array', (req, res) => {
+	let user = req.query.user;
+	console.log(user); //Kelly
+	WordsArray.find({user: user}).then((user) => {
+		// console.log(user.words);
+		words = user[0].words;
+		WordsArray.find({ words: { $in: words } }).then(words => {
+		res.send({words});
+	}, (err) => {
+		res.status(400).send(err);
+	});
+	})
+	
+});
+
+// app.get('/words/array', (req, res) => {
+// 	WordsArray.find({ words: { $in: userWords } }).then(words => {
+// 		res.send({words});
+// 	}, (err) => {
+// 		res.status(400).send(err);
+// 	});
+// });
+
+
 app.listen(port, () => {
 	console.log(`Server running at port:${port}`);
 });
